@@ -10,7 +10,6 @@ export default function Home() {
   const [error, setError] = useState(null)
   const router = useRouter()
 
-  // Inicio de sesión mediante Google OAuth con redirección dinámica
   const handleGoogleLogin = async () => {
     setError(null)
     const redirectUrl = typeof window !== 'undefined' 
@@ -26,7 +25,6 @@ export default function Home() {
     if (error) setError(error.message)
   }
 
-  // Registro tradicional por correo
   const handleSignUp = async (e) => {
     e.preventDefault()
     if (!email || !password) {
@@ -47,7 +45,6 @@ export default function Home() {
     }
   }
 
-  // Inicio de sesión por correo
   const handleSignIn = async (e) => {
     e.preventDefault()
     if (!email || !password) {
@@ -81,7 +78,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Botón de Google OAuth */}
         <button
           type="button"
           onClick={handleGoogleLogin}
