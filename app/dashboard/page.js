@@ -1,38 +1,23 @@
 "use client"
-import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+export default function Dashboard() {
+  const supabase = createClient()
+  const [user, setUser] = useState(null)
 
-  const handleLogin = async () => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (!error) window.location.href = '/dashboard'
-    else alert(error.message)
-  }
-
-  const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
-    if (error) alert(error.message)
-  }
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+  }, [])
 
   return (
     <div style={{ padding: 40 }}>
-      <input placeholder="email" value={email} onChange={e => setEmail(e.target.value)} />
-      <input placeholder="password" type="password" value={password} onChange={e => setPassword(e.target.value)} />
-      <button onClick={handleLogin}>Entrar</button>
-      
-      <hr />
-      
-      <button onClick={handleGoogleLogin} style={{ background: 'white', color: 'black', border: '1px solid black', padding: 10 }}>
-        Continuar con Google
-      </button>
+      <h1>Dashboard</h1>
+      <p>Bienvenido: {user?.email}</p>
+      <button onClick={async () => {
+        await supabase.auth.signOut()
+        window.location.href = '/'
+      }}>Cerrar sesión</button>
     </div>
   )
 }
