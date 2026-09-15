@@ -98,7 +98,6 @@ export default function Dashboard() {
             Guardar
           </button>
         </form>
-
         <ul className="space-y-3">
           {notas.map((nota) => (
             <li
@@ -120,4 +119,6 @@ export default function Dashboard() {
         )}
       </div>
     </main>
+  )
 }
+
