@@ -38,7 +38,10 @@ export async function middleware(request) {
   } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
-  const isProtected = path.startsWith('/dashboard') || path.startsWith('/feed')
+  const isProtected =
+    path.startsWith('/dashboard') ||
+    path.startsWith('/feed') ||
+    path.startsWith('/hilos')
 
   if (isProtected && !user) {
     return NextResponse.redirect(new URL('/', request.url))
@@ -56,5 +59,6 @@ export const config = {
     '/',
     '/dashboard/:path*',
     '/feed/:path*',
+    '/hilos/:path*',
   ],
 }
