@@ -14,6 +14,22 @@
 
   --background: var(--bg);
   --foreground: var(--text);
+
+  /* Feed - azul turquí oscuro */
+  --feed-bg: #0B1C24;
+  --feed-bg2: #102A35;
+  --feed-bg3: #163A48;
+  --feed-border: #1E4A5C;
+  --feed-text: #E8F4F8;
+  --feed-muted: #7BA3B0;
+
+  /* Hilos - modo claro */
+  --hilos-bg: #FFFFFF;
+  --hilos-bg2: #F7F8FA;
+  --hilos-bg3: #EEF1F5;
+  --hilos-border: #E2E6EC;
+  --hilos-text: #1A1A1A;
+  --hilos-muted: #6B7280;
 }
 
 @theme inline {
@@ -72,4 +88,53 @@ body {
 
 .animate-in {
   animation: fadeIn 0.25s ease;
+}
+
+/* ===== Tema Feed (turquí) ===== */
+.theme-feed {
+  background: var(--feed-bg);
+  color: var(--feed-text);
+}
+.theme-feed .card {
+  background: var(--feed-bg2);
+  border-color: var(--feed-border);
+}
+.theme-feed .card-inner {
+  background: var(--feed-bg3);
+  border-color: var(--feed-border);
+}
+.theme-feed .text-muted-feed {
+  color: var(--feed-muted);
+}
+.theme-feed header {
+  background: var(--feed-bg2);
+  border-color: var(--feed-border);
+}
+
+/* ===== Tema Hilos (claro) ===== */
+.theme-hilos {
+  background: var(--hilos-bg);
+  color: var(--hilos-text);
+}
+.theme-hilos .card {
+  background: var(--hilos-bg2);
+  border-color: var(--hilos-border);
+}
+.theme-hilos .card-inner {
+  background: var(--hilos-bg3);
+  border-color: var(--hilos-border);
+}
+.theme-hilos .text-muted-hilos {
+  color: var(--hilos-muted);
+}
+.theme-hilos header {
+  background: var(--hilos-bg);
+  border-color: var(--hilos-border);
+}
+.theme-hilos input,
+.theme-hilos textarea,
+.theme-hilos select {
+  background: var(--hilos-bg);
+  border-color: var(--hilos-border);
+  color: var(--hilos-text);
 }
