@@ -3,25 +3,18 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 const CARRERAS = [
   'Administración de Empresas',
   'Administración Industrial',
-  'Arquitectura',
-  'Comunicación Social',
   'Contaduría Pública',
-  'Derecho',
   'Economía',
-  'Enfermería',
   'Ingeniería Civil',
+  'Ingeniería de Alimentos',
   'Ingeniería de Sistemas',
-  'Ingeniería Industrial',
-  'Medicina',
-  'Odontología',
-  'Psicología',
-  'Química Farmacéutica',
-  'Trabajo Social',
-  'Otra',
+  'Ingeniería Química',
+  'Petroquímica',
 ]
 
 const SEMESTRES = ['1°', '2°', '3°', '4°', '5°', '6°', '7°', '8°', '9°', '10°', 'Egresado']
@@ -49,7 +42,6 @@ export default function Dashboard() {
       }
       setUser(user)
 
-      // Buscar perfil existente
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
@@ -124,12 +116,24 @@ export default function Dashboard() {
       {/* Header */}
       <header className="border-b border-border bg-bg2">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1
-            className="text-xl font-bold tracking-tight"
-            style={{ fontFamily: 'var(--font-space)' }}
-          >
-            <span className="text-purple">AGORA</span>
-          </h1>
+          <div className="flex items-center gap-6">
+            <h1
+              className="text-xl font-bold tracking-tight"
+              style={{ fontFamily: 'var(--font-space)' }}
+            >
+              <span className="text-purple">AGORA</span>
+            </h1>
+            {isProfileComplete && (
+              <nav className="flex gap-4 text-sm">
+                <Link href="/dashboard" className="text-foreground font-medium">
+                  Perfil
+                </Link>
+                <Link href="/feed" className="text-muted hover:text-foreground transition-colors">
+                  Feed
+                </Link>
+              </nav>
+            )}
+          </div>
           <button
             onClick={handleSignOut}
             className="text-sm text-muted hover:text-foreground transition-colors"
@@ -141,7 +145,6 @@ export default function Dashboard() {
 
       <div className="max-w-3xl mx-auto px-4 py-10 animate-in">
         {isProfileComplete ? (
-          /* Vista de perfil completado */
           <div className="bg-bg2 border border-border rounded-2xl p-8">
             <h2 className="text-2xl font-semibold mb-1">
               ¡Hola, {profile.nombre}!
@@ -170,18 +173,22 @@ export default function Dashboard() {
             </div>
 
             <button
-              onClick={() => setProfile({ ...profile, nombre: '' })} // forzar modo edición
+              onClick={() => setProfile({ ...profile, nombre: '' })}
               className="mt-6 text-sm text-purple hover:underline"
             >
               Editar perfil
             </button>
 
-            <p className="mt-8 text-sm text-muted">
-              Próximamente: Feed e Hilos.
-            </p>
+            <div className="mt-8">
+              <Link
+                href="/feed"
+                className="inline-flex items-center gap-2 bg-purple hover:bg-purple-dark text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
+              >
+                Ir al Feed
+              </Link>
+            </div>
           </div>
         ) : (
-          /* Formulario para completar perfil */
           <div className="bg-bg2 border border-border rounded-2xl p-8">
             <h2 className="text-2xl font-semibold mb-2">
               Completa tu perfil
