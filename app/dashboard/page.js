@@ -128,10 +128,10 @@ export default function Dashboard() {
                   Perfil
                 </Link>
                 <Link href="/feed" className="text-muted hover:text-foreground transition-colors">
-                  Feed
+                  Público
                 </Link>
                 <Link href="/hilos" className="text-muted hover:text-foreground transition-colors">
-                  Hilos
+                  Anónimo
                 </Link>
               </nav>
             )}
@@ -186,13 +186,13 @@ export default function Dashboard() {
                 href="/feed"
                 className="inline-flex items-center gap-2 bg-purple hover:bg-purple-dark text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
               >
-                Ir al Feed
+                Ir a Público
               </Link>
               <Link
                 href="/hilos"
                 className="inline-flex items-center gap-2 border border-border hover:border-purple/50 text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
               >
-                Ir a Hilos
+                Ir a Anónimo
               </Link>
             </div>
           </div>
