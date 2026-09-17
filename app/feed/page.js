@@ -15,6 +15,10 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true)
   const [publishing, setPublishing] = useState(false)
   const [message, setMessage] = useState('')
+  const [openComments, setOpenComments] = useState({}) // postId -> boolean
+  const [commentTexts, setCommentTexts] = useState({}) // postId -> text
+  const [commentsByPost, setCommentsByPost] = useState({}) // postId -> comments[]
+  const [liking, setLiking] = useState({}) // postId -> boolean
 
   useEffect(() => {
     const load = async () => {
@@ -37,14 +41,16 @@ export default function FeedPage() {
       }
       setProfile(profileData)
 
-      await loadPosts()
+      await loadPosts(user.id)
       setLoading(false)
     }
     load()
   }, [router, supabase])
 
-  const loadPosts = async () => {
-    // 1. Cargar posts (sin join anidado)
+  const loadPosts = async (currentUserId) => {
+    const uid = currentUserId || user?.id
+
+    // 1. Posts
     const { data: postsData, error: postsError } = await supabase
       .from('posts')
       .select('id, texto, created_at, user_id')
@@ -61,34 +67,63 @@ export default function FeedPage() {
       return
     }
 
-    // 2. Obtener los user_id únicos
+    const postIds = postsData.map((p) => p.id)
     const userIds = [...new Set(postsData.map((p) => p.user_id).filter(Boolean))]
 
-    // 3. Cargar perfiles de esos usuarios
+    // 2. Profiles de autores
     let profilesMap = {}
     if (userIds.length > 0) {
-      const { data: profilesData, error: profilesError } = await supabase
+      const { data: profilesData } = await supabase
         .from('profiles')
         .select('id, nombre, carrera, semestre')
         .in('id', userIds)
 
-      if (profilesError) {
-        console.error('Error cargando profiles:', profilesError)
-        // Seguimos aunque fallen los perfiles
-      } else if (profilesData) {
-        profilesMap = Object.fromEntries(
-          profilesData.map((p) => [p.id, p])
-        )
+      if (profilesData) {
+        profilesMap = Object.fromEntries(profilesData.map((p) => [p.id, p]))
       }
     }
 
-    // 4. Unir posts + perfil del autor
-    const postsWithAuthor = postsData.map((post) => ({
+    // 3. Likes de estos posts
+    let likesMap = {} // postId -> { count, likedByMe }
+    const { data: likesData } = await supabase
+      .from('post_likes')
+      .select('post_id, user_id')
+      .in('post_id', postIds)
+
+    if (likesData) {
+      for (const like of likesData) {
+        if (!likesMap[like.post_id]) {
+          likesMap[like.post_id] = { count: 0, likedByMe: false }
+        }
+        likesMap[like.post_id].count += 1
+        if (like.user_id === uid) {
+          likesMap[like.post_id].likedByMe = true
+        }
+      }
+    }
+
+    // 4. Contar comentarios
+    let commentsCountMap = {}
+    const { data: commentsCountData } = await supabase
+      .from('post_comments')
+      .select('post_id')
+      .in('post_id', postIds)
+
+    if (commentsCountData) {
+      for (const c of commentsCountData) {
+        commentsCountMap[c.post_id] = (commentsCountMap[c.post_id] || 0) + 1
+      }
+    }
+
+    const postsWithData = postsData.map((post) => ({
       ...post,
       author: profilesMap[post.user_id] || null,
+      likesCount: likesMap[post.id]?.count || 0,
+      likedByMe: likesMap[post.id]?.likedByMe || false,
+      commentsCount: commentsCountMap[post.id] || 0,
     }))
 
-    setPosts(postsWithAuthor)
+    setPosts(postsWithData)
     setMessage('')
   }
 
@@ -116,6 +151,130 @@ export default function FeedPage() {
     setNewPost('')
     setPublishing(false)
     await loadPosts()
+  }
+
+  const toggleLike = async (postId) => {
+    if (liking[postId]) return
+    setLiking((prev) => ({ ...prev, [postId]: true }))
+
+    const post = posts.find((p) => p.id === postId)
+    if (!post) {
+      setLiking((prev) => ({ ...prev, [postId]: false }))
+      return
+    }
+
+    if (post.likedByMe) {
+      // Quitar like
+      const { error } = await supabase
+        .from('post_likes')
+        .delete()
+        .eq('post_id', postId)
+        .eq('user_id', user.id)
+
+      if (!error) {
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? { ...p, likedByMe: false, likesCount: Math.max(0, p.likesCount - 1) }
+              : p
+          )
+        )
+      }
+    } else {
+      // Dar like
+      const { error } = await supabase
+        .from('post_likes')
+        .insert({ post_id: postId, user_id: user.id })
+
+      if (!error) {
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? { ...p, likedByMe: true, likesCount: p.likesCount + 1 }
+              : p
+          )
+        )
+      }
+    }
+
+    setLiking((prev) => ({ ...prev, [postId]: false }))
+  }
+
+  const loadComments = async (postId) => {
+    const { data, error } = await supabase
+      .from('post_comments')
+      .select('id, texto, created_at, user_id')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error cargando comentarios:', error)
+      return
+    }
+
+    if (!data || data.length === 0) {
+      setCommentsByPost((prev) => ({ ...prev, [postId]: [] }))
+      return
+    }
+
+    const userIds = [...new Set(data.map((c) => c.user_id).filter(Boolean))]
+    let profilesMap = {}
+
+    if (userIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, nombre')
+        .in('id', userIds)
+
+      if (profilesData) {
+        profilesMap = Object.fromEntries(profilesData.map((p) => [p.id, p]))
+      }
+    }
+
+    const commentsWithAuthor = data.map((c) => ({
+      ...c,
+      authorName: profilesMap[c.user_id]?.nombre || 'Usuario',
+    }))
+
+    setCommentsByPost((prev) => ({ ...prev, [postId]: commentsWithAuthor }))
+  }
+
+  const toggleComments = async (postId) => {
+    const isOpen = openComments[postId]
+    setOpenComments((prev) => ({ ...prev, [postId]: !isOpen }))
+
+    if (!isOpen && !commentsByPost[postId]) {
+      await loadComments(postId)
+    }
+  }
+
+  const handleAddComment = async (postId) => {
+    const text = (commentTexts[postId] || '').trim()
+    if (!text) return
+
+    const { error } = await supabase
+      .from('post_comments')
+      .insert({
+        post_id: postId,
+        user_id: user.id,
+        texto: text,
+      })
+
+    if (error) {
+      console.error('Error comentando:', error)
+      setMessage(error.message)
+      return
+    }
+
+    setCommentTexts((prev) => ({ ...prev, [postId]: '' }))
+    await loadComments(postId)
+
+    // Actualizar contador
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p
+      )
+    )
   }
 
   const handleSignOut = async () => {
@@ -148,7 +307,6 @@ export default function FeedPage() {
 
   return (
     <main className="min-h-screen bg-bg">
-      {/* Header */}
       <header className="border-b border-border bg-bg2 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
@@ -237,18 +395,87 @@ export default function FeedPage() {
                         {post.author?.nombre || 'Usuario'}
                       </span>
                       {post.author?.carrera && (
-                        <span className="text-xs text-muted">
-                          {post.author.carrera}
-                        </span>
+                        <span className="text-xs text-muted">{post.author.carrera}</span>
                       )}
                       <span className="text-xs text-muted">·</span>
-                      <span className="text-xs text-muted">
-                        {formatDate(post.created_at)}
-                      </span>
+                      <span className="text-xs text-muted">{formatDate(post.created_at)}</span>
                     </div>
                     <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">
                       {post.texto}
                     </p>
+
+                    {/* Acciones: Like + Comentarios */}
+                    <div className="flex items-center gap-5 mt-4">
+                      <button
+                        onClick={() => toggleLike(post.id)}
+                        disabled={liking[post.id]}
+                        className={`flex items-center gap-1.5 text-sm transition-colors ${
+                          post.likedByMe
+                            ? 'text-purple'
+                            : 'text-muted hover:text-purple'
+                        }`}
+                      >
+                        <span>{post.likedByMe ? '♥' : '♡'}</span>
+                        <span>{post.likesCount > 0 ? post.likesCount : ''}</span>
+                      </button>
+
+                      <button
+                        onClick={() => toggleComments(post.id)}
+                        className="flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
+                      >
+                        <span>💬</span>
+                        <span>{post.commentsCount > 0 ? post.commentsCount : 'Comentar'}</span>
+                      </button>
+                    </div>
+
+                    {/* Sección de comentarios */}
+                    {openComments[post.id] && (
+                      <div className="mt-4 border-t border-border pt-4 space-y-3">
+                        {(commentsByPost[post.id] || []).map((c) => (
+                          <div key={c.id} className="flex gap-2">
+                            <div className="w-7 h-7 rounded-full bg-bg3 flex items-center justify-center text-xs text-muted shrink-0">
+                              {c.authorName?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+                            <div className="flex-1 bg-bg3 rounded-xl px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium">{c.authorName}</span>
+                                <span className="text-xs text-muted">{formatDate(c.created_at)}</span>
+                              </div>
+                              <p className="text-sm mt-0.5">{c.texto}</p>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Formulario de comentario */}
+                        <div className="flex gap-2 mt-2">
+                          <input
+                            type="text"
+                            value={commentTexts[post.id] || ''}
+                            onChange={(e) =>
+                              setCommentTexts((prev) => ({
+                                ...prev,
+                                [post.id]: e.target.value,
+                              }))
+                            }
+                            placeholder="Escribe un comentario..."
+                            className="flex-1 bg-bg3 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple transition-colors"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                handleAddComment(post.id)
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => handleAddComment(post.id)}
+                            disabled={!(commentTexts[post.id] || '').trim()}
+                            className="bg-purple hover:bg-purple-dark text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+                          >
+                            Enviar
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </article>
