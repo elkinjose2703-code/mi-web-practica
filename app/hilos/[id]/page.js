@@ -28,7 +28,6 @@ export default function HiloDetailPage() {
       }
       setUser(user)
 
-      // Cargar hilo
       const { data: hiloData, error: hiloError } = await supabase
         .from('hilos')
         .select('id, titulo, created_at')
@@ -56,7 +55,6 @@ export default function HiloDetailPage() {
       .order('created_at', { ascending: true })
 
     if (error) {
-      console.error('Error cargando mensajes:', error)
       setError(error.message)
       return
     }
@@ -80,7 +78,6 @@ export default function HiloDetailPage() {
       })
 
     if (insertError) {
-      console.error(insertError)
       setError(insertError.message)
       setSending(false)
       return
@@ -103,7 +100,6 @@ export default function HiloDetailPage() {
     const diffMin = Math.floor(diffMs / 60000)
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
-
     if (diffMin < 1) return 'ahora'
     if (diffMin < 60) return `hace ${diffMin} min`
     if (diffHours < 24) return `hace ${diffHours} h`
@@ -113,16 +109,16 @@ export default function HiloDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-bg">
-        <p className="text-muted text-sm">Cargando...</p>
+      <main className="min-h-screen flex items-center justify-center theme-hilos">
+        <p className="text-muted-hilos text-sm">Cargando...</p>
       </main>
     )
   }
 
   if (!hilo) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-bg gap-4">
-        <p className="text-muted text-sm">{error || 'Hilo no encontrado'}</p>
+      <main className="min-h-screen flex flex-col items-center justify-center theme-hilos gap-4">
+        <p className="text-muted-hilos text-sm">{error || 'Hilo no encontrado'}</p>
         <Link href="/hilos" className="text-purple text-sm hover:underline">
           Volver a Hilos
         </Link>
@@ -131,88 +127,80 @@ export default function HiloDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-bg flex flex-col">
-      <header className="border-b border-border bg-bg2 sticky top-0 z-10">
+    <main className="min-h-screen theme-hilos flex flex-col">
+      <header className="border-b sticky top-0 z-10" style={{ background: '#fff', borderColor: 'var(--hilos-border)' }}>
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <h1
-              className="text-xl font-bold tracking-tight"
-              style={{ fontFamily: 'var(--font-space)' }}
-            >
+            <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-space)' }}>
               <span className="text-purple">AGORA</span>
             </h1>
             <nav className="flex gap-4 text-sm">
-              <Link href="/dashboard" className="text-muted hover:text-foreground transition-colors">
-                Perfil
-              </Link>
-              <Link href="/feed" className="text-muted hover:text-foreground transition-colors">
-                Feed
-              </Link>
-              <Link href="/hilos" className="text-foreground font-medium">
-                Hilos
-              </Link>
+              <Link href="/dashboard" className="text-muted-hilos hover:opacity-80 transition-opacity">Perfil</Link>
+              <Link href="/feed" className="text-muted-hilos hover:opacity-80 transition-opacity">Público</Link>
+              <Link href="/hilos" className="font-medium" style={{ color: 'var(--hilos-text)' }}>Anónimo</Link>
             </nav>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="text-sm text-muted hover:text-foreground transition-colors"
-          >
+          <button onClick={handleSignOut} className="text-sm text-muted-hilos hover:opacity-80 transition-opacity">
             Cerrar sesión
           </button>
         </div>
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6 flex-1 flex flex-col animate-in w-full">
-        {/* Volver + título */}
         <div className="mb-6">
-          <Link
-            href="/hilos"
-            className="text-xs text-muted hover:text-foreground transition-colors"
-          >
+          <Link href="/hilos" className="text-xs text-muted-hilos hover:opacity-80 transition-opacity">
             ← Volver a Hilos
           </Link>
-          <h2 className="text-lg font-semibold mt-2 leading-snug">{hilo.titulo}</h2>
-          <p className="text-xs text-cyan/80 mt-1">Hilo anónimo · {formatDate(hilo.created_at)}</p>
+          <h2 className="text-lg font-semibold mt-2 leading-snug" style={{ color: 'var(--hilos-text)' }}>
+            {hilo.titulo}
+          </h2>
+          <p className="text-xs text-purple mt-1">Hilo anónimo · {formatDate(hilo.created_at)}</p>
         </div>
 
-        {/* Mensajes */}
         <div className="flex-1 space-y-3 mb-6">
           {mensajes.length === 0 ? (
-            <p className="text-muted text-sm text-center py-8">No hay mensajes aún.</p>
+            <p className="text-muted-hilos text-sm text-center py-8">No hay mensajes aún.</p>
           ) : (
             mensajes.map((msg, index) => (
               <div
                 key={msg.id}
-                className="bg-bg2 border border-border rounded-2xl p-4"
+                className="rounded-2xl p-4 border"
+                style={{ background: 'var(--hilos-bg2)', borderColor: 'var(--hilos-border)' }}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 rounded-full bg-bg3 flex items-center justify-center text-xs text-muted">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs text-muted-hilos"
+                    style={{ background: 'var(--hilos-bg3)' }}
+                  >
                     ?
                   </div>
-                  <span className="text-xs text-muted">Anónimo #{index + 1}</span>
-                  <span className="text-xs text-muted">·</span>
-                  <span className="text-xs text-muted">{formatDate(msg.created_at)}</span>
+                  <span className="text-xs text-muted-hilos">Anónimo #{index + 1}</span>
+                  <span className="text-xs text-muted-hilos">·</span>
+                  <span className="text-xs text-muted-hilos">{formatDate(msg.created_at)}</span>
                 </div>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.texto}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--hilos-text)' }}>
+                  {msg.texto}
+                </p>
               </div>
             ))
           )}
         </div>
 
-        {/* Responder */}
         <form
           onSubmit={handleReply}
-          className="bg-bg2 border border-border rounded-2xl p-4 sticky bottom-4"
+          className="rounded-2xl p-4 sticky bottom-4 border"
+          style={{ background: 'var(--hilos-bg2)', borderColor: 'var(--hilos-border)' }}
         >
           <textarea
             value={nuevoMensaje}
             onChange={(e) => setNuevoMensaje(e.target.value)}
             placeholder="Responder de forma anónima..."
             rows={2}
-            className="w-full bg-bg3 border border-border rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-purple transition-colors placeholder:text-muted"
+            className="w-full rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-purple transition-colors"
+            style={{ background: '#fff', border: '1px solid var(--hilos-border)', color: 'var(--hilos-text)' }}
           />
           <div className="flex items-center justify-between mt-3">
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
             <div className="ml-auto">
               <button
                 type="submit"
