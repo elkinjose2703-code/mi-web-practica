@@ -15,10 +15,10 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true)
   const [publishing, setPublishing] = useState(false)
   const [message, setMessage] = useState('')
-  const [openComments, setOpenComments] = useState({}) // postId -> boolean
-  const [commentTexts, setCommentTexts] = useState({}) // postId -> text
-  const [commentsByPost, setCommentsByPost] = useState({}) // postId -> comments[]
-  const [liking, setLiking] = useState({}) // postId -> boolean
+  const [openComments, setOpenComments] = useState({})
+  const [commentTexts, setCommentTexts] = useState({})
+  const [commentsByPost, setCommentsByPost] = useState({})
+  const [liking, setLiking] = useState({})
 
   useEffect(() => {
     const load = async () => {
@@ -50,7 +50,6 @@ export default function FeedPage() {
   const loadPosts = async (currentUserId) => {
     const uid = currentUserId || user?.id
 
-    // 1. Posts
     const { data: postsData, error: postsError } = await supabase
       .from('posts')
       .select('id, texto, created_at, user_id')
@@ -70,7 +69,6 @@ export default function FeedPage() {
     const postIds = postsData.map((p) => p.id)
     const userIds = [...new Set(postsData.map((p) => p.user_id).filter(Boolean))]
 
-    // 2. Profiles de autores
     let profilesMap = {}
     if (userIds.length > 0) {
       const { data: profilesData } = await supabase
@@ -83,8 +81,7 @@ export default function FeedPage() {
       }
     }
 
-    // 3. Likes de estos posts
-    let likesMap = {} // postId -> { count, likedByMe }
+    let likesMap = {}
     const { data: likesData } = await supabase
       .from('post_likes')
       .select('post_id, user_id')
@@ -102,7 +99,6 @@ export default function FeedPage() {
       }
     }
 
-    // 4. Contar comentarios
     let commentsCountMap = {}
     const { data: commentsCountData } = await supabase
       .from('post_comments')
@@ -164,7 +160,6 @@ export default function FeedPage() {
     }
 
     if (post.likedByMe) {
-      // Quitar like
       const { error } = await supabase
         .from('post_likes')
         .delete()
@@ -181,7 +176,6 @@ export default function FeedPage() {
         )
       }
     } else {
-      // Dar like
       const { error } = await supabase
         .from('post_likes')
         .insert({ post_id: postId, user_id: user.id })
@@ -269,7 +263,6 @@ export default function FeedPage() {
     setCommentTexts((prev) => ({ ...prev, [postId]: '' }))
     await loadComments(postId)
 
-    // Actualizar contador
     setPosts((prev) =>
       prev.map((p) =>
         p.id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p
@@ -323,6 +316,9 @@ export default function FeedPage() {
               <Link href="/feed" className="text-foreground font-medium">
                 Feed
               </Link>
+              <Link href="/hilos" className="text-muted hover:text-foreground transition-colors">
+                Hilos
+              </Link>
             </nav>
           </div>
           <button
@@ -335,7 +331,6 @@ export default function FeedPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6 animate-in">
-        {/* Crear publicación */}
         <div className="bg-bg2 border border-border rounded-2xl p-5 mb-6">
           <div className="flex items-start gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-purple/20 flex items-center justify-center text-purple font-semibold text-sm shrink-0">
@@ -372,7 +367,6 @@ export default function FeedPage() {
           </form>
         </div>
 
-        {/* Lista de publicaciones */}
         <div className="space-y-4">
           {posts.length === 0 ? (
             <div className="text-center py-12">
@@ -404,7 +398,6 @@ export default function FeedPage() {
                       {post.texto}
                     </p>
 
-                    {/* Acciones: Like + Comentarios */}
                     <div className="flex items-center gap-5 mt-4">
                       <button
                         onClick={() => toggleLike(post.id)}
@@ -428,7 +421,6 @@ export default function FeedPage() {
                       </button>
                     </div>
 
-                    {/* Sección de comentarios */}
                     {openComments[post.id] && (
                       <div className="mt-4 border-t border-border pt-4 space-y-3">
                         {(commentsByPost[post.id] || []).map((c) => (
@@ -446,7 +438,6 @@ export default function FeedPage() {
                           </div>
                         ))}
 
-                        {/* Formulario de comentario */}
                         <div className="flex gap-2 mt-2">
                           <input
                             type="text"
