@@ -38,12 +38,10 @@ export default function HilosPage() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error cargando hilos:', error)
       setError(error.message)
       return
     }
 
-    // Contar mensajes por hilo
     const hiloIds = (data || []).map((h) => h.id)
     let counts = {}
 
@@ -76,24 +74,18 @@ export default function HilosPage() {
     setCreating(true)
     setError('')
 
-    // Crear hilo
     const { data: hilo, error: hiloError } = await supabase
       .from('hilos')
-      .insert({
-        user_id: user.id,
-        titulo: titulo.trim(),
-      })
+      .insert({ user_id: user.id, titulo: titulo.trim() })
       .select('id')
       .single()
 
     if (hiloError) {
-      console.error(hiloError)
       setError(hiloError.message)
       setCreating(false)
       return
     }
 
-    // Primer mensaje del hilo
     const { error: msgError } = await supabase
       .from('hilo_mensajes')
       .insert({
@@ -103,7 +95,6 @@ export default function HilosPage() {
       })
 
     if (msgError) {
-      console.error(msgError)
       setError(msgError.message)
       setCreating(false)
       return
@@ -128,7 +119,6 @@ export default function HilosPage() {
     const diffMin = Math.floor(diffMs / 60000)
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
-
     if (diffMin < 1) return 'ahora'
     if (diffMin < 60) return `hace ${diffMin} min`
     if (diffHours < 24) return `hace ${diffHours} h`
@@ -138,50 +128,40 @@ export default function HilosPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-bg">
-        <p className="text-muted text-sm">Cargando...</p>
+      <main className="min-h-screen flex items-center justify-center theme-hilos">
+        <p className="text-muted-hilos text-sm">Cargando...</p>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-bg">
-      <header className="border-b border-border bg-bg2 sticky top-0 z-10">
+    <main className="min-h-screen theme-hilos">
+      <header className="border-b sticky top-0 z-10" style={{ background: '#fff', borderColor: 'var(--hilos-border)' }}>
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <h1
-              className="text-xl font-bold tracking-tight"
-              style={{ fontFamily: 'var(--font-space)' }}
-            >
+            <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: 'var(--font-space)' }}>
               <span className="text-purple">AGORA</span>
             </h1>
             <nav className="flex gap-4 text-sm">
-              <Link href="/dashboard" className="text-muted hover:text-foreground transition-colors">
-                Perfil
-              </Link>
-              <Link href="/feed" className="text-muted hover:text-foreground transition-colors">
-                Feed
-              </Link>
-              <Link href="/hilos" className="text-foreground font-medium">
-                Hilos
-              </Link>
+              <Link href="/dashboard" className="text-muted-hilos hover:opacity-80 transition-opacity">Perfil</Link>
+              <Link href="/feed" className="text-muted-hilos hover:opacity-80 transition-opacity">Público</Link>
+              <Link href="/hilos" className="font-medium" style={{ color: 'var(--hilos-text)' }}>Anónimo</Link>
             </nav>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="text-sm text-muted hover:text-foreground transition-colors"
-          >
+          <button onClick={handleSignOut} className="text-sm text-muted-hilos hover:opacity-80 transition-opacity">
             Cerrar sesión
           </button>
         </div>
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-6 animate-in">
-        {/* Banner anónimo */}
-        <div className="bg-bg2 border border-border rounded-2xl px-5 py-4 mb-6 flex items-center justify-between gap-4">
+        <div
+          className="rounded-2xl px-5 py-4 mb-6 flex items-center justify-between gap-4 border"
+          style={{ background: 'var(--hilos-bg2)', borderColor: 'var(--hilos-border)' }}
+        >
           <div>
-            <h2 className="text-lg font-semibold">Hilos</h2>
-            <p className="text-xs text-muted mt-0.5">
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--hilos-text)' }}>Hilos</h2>
+            <p className="text-xs text-muted-hilos mt-0.5">
               Espacio completamente anónimo. Nadie verá tu identidad.
             </p>
           </div>
@@ -189,69 +169,73 @@ export default function HilosPage() {
             onClick={() => setShowCreate(!showCreate)}
             className="bg-purple hover:bg-purple-dark text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors shrink-0"
           >
-            {showCreate ? 'Cancelar' : 'Nuevo hilo'}
+            {showCreate ? 'Cancelar' : 'Crear hilo'}
           </button>
         </div>
 
-        {/* Formulario crear hilo */}
         {showCreate && (
           <form
             onSubmit={handleCreate}
-            className="bg-bg2 border border-border rounded-2xl p-5 mb-6 space-y-4"
+            className="rounded-2xl p-5 mb-6 space-y-4 border"
+            style={{ background: 'var(--hilos-bg2)', borderColor: 'var(--hilos-border)' }}
           >
             <div>
-              <label className="block text-sm text-muted mb-1.5">Título del hilo</label>
+              <label className="block text-sm text-muted-hilos mb-1.5">Título del hilo</label>
               <input
                 type="text"
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
                 placeholder="Ej: ¿Alguien tiene apuntes de..."
-                className="w-full bg-bg3 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple transition-colors"
+                className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple transition-colors"
+                style={{ background: '#fff', border: '1px solid var(--hilos-border)', color: 'var(--hilos-text)' }}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm text-muted mb-1.5">Primer mensaje</label>
+              <label className="block text-sm text-muted-hilos mb-1.5">Primer mensaje</label>
               <textarea
                 value={mensaje}
                 onChange={(e) => setMensaje(e.target.value)}
                 placeholder="Escribe de forma anónima..."
                 rows={3}
-                className="w-full bg-bg3 border border-border rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-purple transition-colors"
+                className="w-full rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-purple transition-colors"
+                style={{ background: '#fff', border: '1px solid var(--hilos-border)', color: 'var(--hilos-text)' }}
                 required
               />
             </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-red-500">{error}</p>}
             <button
               type="submit"
               disabled={creating || !titulo.trim() || !mensaje.trim()}
               className="w-full bg-purple hover:bg-purple-dark text-white font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
             >
-              {creating ? 'Creando...' : 'Crear hilo anónimo'}
+              {creating ? 'Creando...' : 'Crear hilo'}
             </button>
           </form>
         )}
 
-        {/* Lista de hilos */}
         <div className="space-y-3">
           {hilos.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted text-sm">Aún no hay hilos.</p>
-              <p className="text-muted text-xs mt-1">Sé el primero en crear uno.</p>
+              <p className="text-muted-hilos text-sm">Aún no hay hilos.</p>
+              <p className="text-muted-hilos text-xs mt-1">Sé el primero en crear uno.</p>
             </div>
           ) : (
             hilos.map((hilo) => (
               <Link
                 key={hilo.id}
                 href={`/hilos/${hilo.id}`}
-                className="block bg-bg2 border border-border rounded-2xl p-5 hover:border-purple/40 transition-colors"
+                className="block rounded-2xl p-5 border transition-colors hover:border-purple/40"
+                style={{ background: 'var(--hilos-bg2)', borderColor: 'var(--hilos-border)' }}
               >
-                <h3 className="text-sm font-medium leading-snug">{hilo.titulo}</h3>
-                <div className="flex items-center gap-3 mt-2 text-xs text-muted">
+                <h3 className="text-sm font-medium leading-snug" style={{ color: 'var(--hilos-text)' }}>
+                  {hilo.titulo}
+                </h3>
+                <div className="flex items-center gap-3 mt-2 text-xs text-muted-hilos">
                   <span>{formatDate(hilo.created_at)}</span>
                   <span>·</span>
                   <span>{hilo.mensajesCount} {hilo.mensajesCount === 1 ? 'mensaje' : 'mensajes'}</span>
-                  <span className="ml-auto text-cyan/80">Anónimo</span>
+                  <span className="ml-auto text-purple">Anónimo</span>
                 </div>
               </Link>
             ))
