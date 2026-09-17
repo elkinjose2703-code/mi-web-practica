@@ -37,15 +37,14 @@ export async function middleware(request) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Proteger rutas privadas
-  const isProtected = request.nextUrl.pathname.startsWith('/dashboard')
+  const path = request.nextUrl.pathname
+  const isProtected = path.startsWith('/dashboard') || path.startsWith('/feed')
 
   if (isProtected && !user) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // Si ya está autenticado y va al login, redirigir al dashboard
-  if (request.nextUrl.pathname === '/' && user) {
+  if (path === '/' && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -56,5 +55,6 @@ export const config = {
   matcher: [
     '/',
     '/dashboard/:path*',
+    '/feed/:path*',
   ],
 }
