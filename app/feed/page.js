@@ -25,7 +25,6 @@ export default function FeedPage() {
       }
       setUser(user)
 
-      // Perfil del usuario actual
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
@@ -33,13 +32,11 @@ export default function FeedPage() {
         .maybeSingle()
 
       if (!profileData?.nombre) {
-        // Si no tiene perfil completo, mandarlo a completarlo
         router.replace('/dashboard')
         return
       }
       setProfile(profileData)
 
-      // Cargar posts con datos del autor
       await loadPosts()
       setLoading(false)
     }
@@ -47,28 +44,52 @@ export default function FeedPage() {
   }, [router, supabase])
 
   const loadPosts = async () => {
-    const { data, error } = await supabase
+    // 1. Cargar posts (sin join anidado)
+    const { data: postsData, error: postsError } = await supabase
       .from('posts')
-      .select(`
-        id,
-        texto,
-        created_at,
-        user_id,
-        profiles (
-          nombre,
-          carrera,
-          semestre
-        )
-      `)
+      .select('id, texto, created_at, user_id')
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error(error)
-      setMessage('Error al cargar publicaciones')
+    if (postsError) {
+      console.error('Error cargando posts:', postsError)
+      setMessage(postsError.message || 'Error al cargar publicaciones')
       return
     }
 
-    setPosts(data || [])
+    if (!postsData || postsData.length === 0) {
+      setPosts([])
+      return
+    }
+
+    // 2. Obtener los user_id únicos
+    const userIds = [...new Set(postsData.map((p) => p.user_id).filter(Boolean))]
+
+    // 3. Cargar perfiles de esos usuarios
+    let profilesMap = {}
+    if (userIds.length > 0) {
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, nombre, carrera, semestre')
+        .in('id', userIds)
+
+      if (profilesError) {
+        console.error('Error cargando profiles:', profilesError)
+        // Seguimos aunque fallen los perfiles
+      } else if (profilesData) {
+        profilesMap = Object.fromEntries(
+          profilesData.map((p) => [p.id, p])
+        )
+      }
+    }
+
+    // 4. Unir posts + perfil del autor
+    const postsWithAuthor = postsData.map((post) => ({
+      ...post,
+      author: profilesMap[post.user_id] || null,
+    }))
+
+    setPosts(postsWithAuthor)
+    setMessage('')
   }
 
   const handlePublish = async (e) => {
@@ -86,6 +107,7 @@ export default function FeedPage() {
       })
 
     if (error) {
+      console.error('Error publicando:', error)
       setMessage(error.message)
       setPublishing(false)
       return
@@ -207,16 +229,18 @@ export default function FeedPage() {
               >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-purple/20 flex items-center justify-center text-purple font-semibold text-sm shrink-0">
-                    {post.profiles?.nombre?.charAt(0)?.toUpperCase() || '?'}
+                    {post.author?.nombre?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">
-                        {post.profiles?.nombre || 'Usuario'}
+                        {post.author?.nombre || 'Usuario'}
                       </span>
-                      <span className="text-xs text-muted">
-                        {post.profiles?.carrera}
-                      </span>
+                      {post.author?.carrera && (
+                        <span className="text-xs text-muted">
+                          {post.author.carrera}
+                        </span>
+                      )}
                       <span className="text-xs text-muted">·</span>
                       <span className="text-xs text-muted">
                         {formatDate(post.created_at)}
