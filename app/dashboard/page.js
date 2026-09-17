@@ -113,7 +113,6 @@ export default function Dashboard() {
 
   return (
     <main className="min-h-screen bg-bg">
-      {/* Header */}
       <header className="border-b border-border bg-bg2">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
@@ -130,6 +129,9 @@ export default function Dashboard() {
                 </Link>
                 <Link href="/feed" className="text-muted hover:text-foreground transition-colors">
                   Feed
+                </Link>
+                <Link href="/hilos" className="text-muted hover:text-foreground transition-colors">
+                  Hilos
                 </Link>
               </nav>
             )}
@@ -179,12 +181,18 @@ export default function Dashboard() {
               Editar perfil
             </button>
 
-            <div className="mt-8">
+            <div className="mt-8 flex gap-3">
               <Link
                 href="/feed"
                 className="inline-flex items-center gap-2 bg-purple hover:bg-purple-dark text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
               >
                 Ir al Feed
+              </Link>
+              <Link
+                href="/hilos"
+                className="inline-flex items-center gap-2 border border-border hover:border-purple/50 text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
+              >
+                Ir a Hilos
               </Link>
             </div>
           </div>
